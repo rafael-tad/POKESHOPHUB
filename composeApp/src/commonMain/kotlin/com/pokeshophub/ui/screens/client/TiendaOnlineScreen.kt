@@ -223,14 +223,18 @@ class TiendaOnlineScreen(val sesion: SesionUsuario, @field:Transient val onBack:
                                                 contentType(ContentType.Application.Json)
                                                 setBody(SolicitudCompraRequest(items = itemsReq))
                                             }
-                                            val res = response.body<MensajeResponse>()
-                                            if (res.success) {
-                                                carrito = emptyMap()
-                                                showCartDialog = false
-                                                showSuccessPurchaseDialog = true
-                                                cargarDatos() // Refrescar stock y saldo
+                                            if (response.status.value in 200..299) {
+                                                val res = response.body<MensajeResponse>()
+                                                if (res.success) {
+                                                    carrito = emptyMap()
+                                                    showCartDialog = false
+                                                    showSuccessPurchaseDialog = true
+                                                    cargarDatos() // Refrescar stock y saldo
+                                                } else {
+                                                    errorCompraCart = res.mensaje
+                                                }
                                             } else {
-                                                errorCompraCart = res.mensaje
+                                                errorCompraCart = "Error del servidor (${response.status.value}). Por favor, inténtalo más tarde."
                                             }
                                         } catch (e: Exception) {
                                             errorCompraCart = "Error en el pedido: ${e.message}"

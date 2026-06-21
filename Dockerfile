@@ -6,6 +6,9 @@ WORKDIR /home/gradle/src
 # Dar permisos de ejecución a gradlew
 RUN chmod +x gradlew
 
+# Eliminar la configuración local de Java de Windows para la compilación en Linux
+RUN sed -i '/org.gradle.java.home/d' gradle.properties
+
 # Compilar solo el módulo backend y generar el archivo JAR ejecutable
 RUN ./gradlew :backend:bootJar --no-daemon -x test
 

@@ -22,5 +22,8 @@ COPY --from=build /home/gradle/src/backend/build/libs/*.jar app.jar
 # Configurar directorio de subida de fotos
 RUN mkdir -p /uploads
 
+# Copiar las imágenes de producto por defecto desde el repositorio
+COPY --from=build /home/gradle/src/backend/uploads /uploads
+
 # Arrancar la aplicación
 ENTRYPOINT ["java", "-jar", "/app.jar"]

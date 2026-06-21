@@ -18,7 +18,7 @@ class AuthRepository(private val settings: Settings = Settings()) {
         private const val KEY_NOMBRE = "user_nombre"
     }
 
-    /** Inicia sesiÃ³n. Devuelve la sesiÃ³n si tiene Ã©xito, null si las credenciales son incorrectas. */
+    /** Inicia sesión. Devuelve la sesión si tiene éxito, null si las credenciales son incorrectas. */
     suspend fun login(email: String, password: String): Result<SesionUsuario> {
         return try {
             val response = httpClient.post("/api/auth/login") {
@@ -32,17 +32,18 @@ class AuthRepository(private val settings: Settings = Settings()) {
                 TokenStore.token = sesion.token
                 Result.success(sesion)
             } else {
-                val error = response.body<MensajeResponse>()
-            }
-            if (response.status.isSuccess()) {
-                val loginResp = response.body<LoginResponse>()
-                val sesion = loginResp.toSesion()
-                guardarSesion(sesion)
-                TokenStore.token = sesion.token
-                Result.success(sesion)
-            } else {
-                val error = response.body<MensajeResponse>()
-                Result.failure(Exception(error.mensaje))
+                try {
+                    val error = response.body<MensajeResponse>()
+                    Result.failure(Exception(error.mensaje))
+                } catch (e: Exception) {
+                    if (response.status.value == 400) {
+                        Result.failure(Exception("Por favor, introduce un email válido."))
+                    } else if (response.status.value == 403) {
+                        Result.failure(Exception("Tu cuenta está pendiente de aprobación por un administrador."))
+                    } else {
+                        Result.failure(Exception("Error al iniciar sesión (${response.status.value})."))
+                    }
+                }
             }
         } catch (e: Exception) {
             Result.failure(Exception("Error de conexión: ${e.message}"))
@@ -68,8 +69,18 @@ class AuthRepository(private val settings: Settings = Settings()) {
                 val res = response.body<MensajeResponse>()
                 Result.success(res.mensaje)
             } else {
-                val error = response.body<MensajeResponse>()
-                Result.failure(Exception(error.mensaje))
+                try {
+                    val error = response.body<MensajeResponse>()
+                    Result.failure(Exception(error.mensaje))
+                } catch (e: Exception) {
+                    if (response.status.value == 400) {
+                        Result.failure(Exception("Por favor, verifica que los campos sean correctos (ej: email válido y contraseña de mínimo 8 caracteres)."))
+                    } else if (response.status.value == 409) {
+                        Result.failure(Exception("Ya existe una cuenta con ese email o DNI/NIE."))
+                    } else {
+                        Result.failure(Exception("Error del servidor (${response.status.value})."))
+                    }
+                }
             }
         } catch (e: Exception) {
             Result.failure(Exception("Error de conexión: ${e.message}"))

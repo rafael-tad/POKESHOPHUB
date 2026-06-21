@@ -295,7 +295,10 @@ class BilleteraVirtualScreen(val sesion: SesionUsuario, @field:Transient val onB
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
                             .size(40.dp)
@@ -314,7 +317,7 @@ class BilleteraVirtualScreen(val sesion: SesionUsuario, @field:Transient val onB
                         )
                     }
                     Spacer(Modifier.width(14.dp))
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(mov.descripcion, fontWeight = FontWeight.Bold, color = TextoPrimario, fontSize = 14.sp)
                         Text(
                             text = "${mov.fecha} • ${mov.categoria}",
@@ -323,7 +326,7 @@ class BilleteraVirtualScreen(val sesion: SesionUsuario, @field:Transient val onB
                         )
                     }
                 }
-
+                Spacer(Modifier.width(16.dp))
                 Text(
                     text = "${if (esIngreso) "+" else "-"}${mov.importe.formatTwoDecimals()} €",
                     fontWeight = FontWeight.ExtraBold,

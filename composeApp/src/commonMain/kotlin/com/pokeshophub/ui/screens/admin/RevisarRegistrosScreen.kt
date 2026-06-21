@@ -337,14 +337,14 @@ class RevisarRegistrosScreen(val sesion: SesionUsuario) : Screen {
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Teléfono", style = MaterialTheme.typography.labelSmall, color = TextoSecundario)
-                        Text(cliente.telefono.ifEmpty { "No provisto" }, style = MaterialTheme.typography.bodyMedium, color = TextoPrimario, fontWeight = FontWeight.SemiBold)
+                        Text(cliente.telefono.orEmpty().ifEmpty { "No provisto" }, style = MaterialTheme.typography.bodyMedium, color = TextoPrimario, fontWeight = FontWeight.SemiBold)
                     }
                 }
 
-                if (cliente.direccion.isNotEmpty()) {
+                if (cliente.direccion.orEmpty().isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
                     Text("Dirección", style = MaterialTheme.typography.labelSmall, color = TextoSecundario)
-                    Text(cliente.direccion, style = MaterialTheme.typography.bodyMedium, color = TextoPrimario)
+                    Text(cliente.direccion.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = TextoPrimario)
                 }
 
                 Spacer(Modifier.height(16.dp))

@@ -196,7 +196,7 @@ private fun ClienteCard(cliente: ClienteDto, onClick: () -> Unit) {
                     
                     Icon(Icons.Default.Phone, null, modifier = Modifier.size(16.dp), tint = TextoSecundario)
                     Spacer(Modifier.width(4.dp))
-                    Text(cliente.telefono.ifEmpty { "Sin teléfono" }, style = MaterialTheme.typography.bodyMedium, color = TextoSecundario)
+                    Text(cliente.telefono.orEmpty().ifEmpty { "Sin teléfono" }, style = MaterialTheme.typography.bodyMedium, color = TextoSecundario)
                 }
             }
             

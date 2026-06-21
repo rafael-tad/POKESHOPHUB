@@ -61,8 +61,8 @@ class PerfilScreen(val sesion: SesionUsuario, @field:Transient val onBack: (() -
                     cliente = c
                     nombre = c.nombre
                     apellidos = c.apellidos
-                    telefono = c.telefono
-                    direccion = c.direccion
+                    telefono = c.telefono.orEmpty()
+                    direccion = c.direccion.orEmpty()
                 } else {
                     error = "Error al cargar perfil"
                 }

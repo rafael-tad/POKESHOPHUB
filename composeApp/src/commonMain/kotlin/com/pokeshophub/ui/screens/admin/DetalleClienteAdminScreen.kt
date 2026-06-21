@@ -71,8 +71,8 @@ class DetalleClienteAdminScreen(val sesion: SesionUsuario, val clienteId: Long) 
                         apellidos = c.apellidos
                         dni = c.dni
                         email = c.email
-                        telefono = c.telefono
-                        direccion = c.direccion
+                        telefono = c.telefono.orEmpty()
+                        direccion = c.direccion.orEmpty()
                     } else {
                         errorMsg = "Error al obtener ficha de cliente"
                     }

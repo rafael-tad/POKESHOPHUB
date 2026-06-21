@@ -4,8 +4,12 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import org.jetbrains.skia.Image
 
-actual fun decodeImageBitmap(bytes: ByteArray): ImageBitmap {
-    return Image.makeFromEncoded(bytes).toComposeImageBitmap()
+actual fun decodeImageBitmap(bytes: ByteArray): ImageBitmap? {
+    return try {
+        Image.makeFromEncoded(bytes).toComposeImageBitmap()
+    } catch (e: Exception) {
+        null
+    }
 }
 
 actual fun combineFrontBackImages(frontBytes: ByteArray, backBytes: ByteArray): ByteArray {

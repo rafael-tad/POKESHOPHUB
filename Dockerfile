@@ -7,7 +7,7 @@ WORKDIR /home/gradle/src
 RUN ./gradlew :backend:bootJar --no-daemon -x test
 
 # Imagen base ligera de JDK 17 para la ejecución
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre
 EXPOSE 8080
 
 # Copiar el JAR generado desde la fase de compilación

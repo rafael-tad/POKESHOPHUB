@@ -32,4 +32,10 @@ class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest().body(MensajeResponse(errorMsg, false))
     }
+
+    @ExceptionHandler(Exception::class)
+    fun handleGeneralException(ex: Exception): ResponseEntity<MensajeResponse> {
+        val msg = ex.localizedMessage ?: "Ocurrió un error inesperado en el servidor."
+        return ResponseEntity.status(500).body(MensajeResponse("Error del servidor: $msg", false))
+    }
 }

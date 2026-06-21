@@ -200,6 +200,7 @@ class DashboardAdminScreen(val sesion: SesionUsuario) : Screen {
                             Triple(Icons.Default.PersonAdd, "Revisar Registros", Color(0xFF8B5CF6)),
                             Triple(Icons.Default.Inventory, "Gestión de Stock TCG", AzulVariante),
                             Triple(Icons.Default.GppMaybe, "Valoración de Cartas", NaranjaAccento),
+                            Triple(Icons.Default.ShoppingCartCheckout, "Solicitudes de Compra", Color(0xFF6366F1)),
                             Triple(Icons.Default.EmojiEvents, "Organización de Torneos", MoradoSecundario),
                             Triple(Icons.Default.AccountBalanceWallet, "Panel Control de Saldo", VerdeConfirmacion),
                             Triple(Icons.Default.DashboardCustomize, "Kanban de Tareas", Color(0xFFD94F8A)),
@@ -216,6 +217,7 @@ class DashboardAdminScreen(val sesion: SesionUsuario) : Screen {
                                     "Revisar Registros" -> navigator.push(RevisarRegistrosScreen(sesion))
                                     "Gestión de Stock TCG" -> navigator.push(GestionStockScreen(sesion))
                                     "Valoración de Cartas" -> navigator.push(ValoracionCartasScreen(sesion))
+                                    "Solicitudes de Compra" -> navigator.push(SolicitudesCompraAdminScreen(sesion))
                                     "Organización de Torneos" -> navigator.push(OrganizacionTorneosScreen(sesion))
                                     "Panel Control de Saldo" -> navigator.push(PanelControlSaldoScreen(sesion))
                                     "Kanban de Tareas" -> navigator.push(TareasKanbanScreen(sesion))

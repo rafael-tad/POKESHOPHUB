@@ -216,25 +216,21 @@ class TiendaOnlineScreen(val sesion: SesionUsuario, @field:Transient val onBack:
                                         procesandoCompraCart = true
                                         errorCompraCart = null
                                         try {
-                                            var exitoTotal = true
-                                            for ((prodId, qty) in carrito) {
-                                                val response = httpClient.post("/api/tienda/comprar/${sesion.userId}") {
-                                                    contentType(ContentType.Application.Json)
-                                                    setBody(CompraRequest(productoId = prodId, cantidad = qty))
-                                                }
-                                                val res = response.body<MensajeResponse>()
-                                                if (!res.success) {
-                                                    exitoTotal = false
-                                                    errorCompraCart = res.mensaje
-                                                    break
-                                                }
+                                            val itemsReq = carrito.map { (prodId, qty) -> 
+                                                ItemCompraRequest(productoId = prodId, cantidad = qty) 
                                             }
-
-                                            if (exitoTotal) {
+                                            val response = httpClient.post("/api/tienda/solicitar-compra/${sesion.userId}") {
+                                                contentType(ContentType.Application.Json)
+                                                setBody(SolicitudCompraRequest(items = itemsReq))
+                                            }
+                                            val res = response.body<MensajeResponse>()
+                                            if (res.success) {
                                                 carrito = emptyMap()
                                                 showCartDialog = false
                                                 showSuccessPurchaseDialog = true
                                                 cargarDatos() // Refrescar stock y saldo
+                                            } else {
+                                                errorCompraCart = res.mensaje
                                             }
                                         } catch (e: Exception) {
                                             errorCompraCart = "Error en el pedido: ${e.message}"

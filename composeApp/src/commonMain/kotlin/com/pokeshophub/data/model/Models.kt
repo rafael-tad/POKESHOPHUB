@@ -328,3 +328,39 @@ data class AdminResumenDto(
     val torneosActivos: Int = 0,
     val tasacionesPendientes: Int = 0
 )
+
+@Serializable
+data class SolicitudCompraItem(
+    val productoId: Long,
+    val productoNombre: String,
+    val cantidad: Int,
+    val precioUnitario: Double
+)
+
+@Serializable
+data class SolicitudCompra(
+    val id: Long = 0,
+    val clienteId: Long,
+    val clienteNombre: String,
+    val fecha: String,
+    var estado: String,
+    val total: Double,
+    val items: List<SolicitudCompraItem> = emptyList()
+)
+
+@Serializable
+data class SolicitudCompraRequest(
+    val items: List<ItemCompraRequest> = emptyList()
+)
+
+@Serializable
+data class ItemCompraRequest(
+    val productoId: Long,
+    val cantidad: Int
+)
+
+@Serializable
+data class ResolverSolicitudCompraRequest(
+    val aceptar: Boolean
+)
+

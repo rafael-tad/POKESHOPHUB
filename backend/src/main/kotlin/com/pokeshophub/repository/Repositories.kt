@@ -86,3 +86,10 @@ interface InteraccionRepository : JpaRepository<Interaccion, Long> {
     fun findByClienteIdOrderByFechaDesc(clienteId: Long): List<Interaccion>
     fun findTop100ByOrderByFechaDesc(): List<Interaccion>
 }
+
+@Repository
+interface SolicitudCompraRepository : JpaRepository<SolicitudCompra, Long> {
+    fun findByClienteIdOrderByFechaDesc(clienteId: Long): List<SolicitudCompra>
+    fun findAllByOrderByFechaDesc(): List<SolicitudCompra>
+}
+

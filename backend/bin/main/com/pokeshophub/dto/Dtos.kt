@@ -192,3 +192,17 @@ data class AdminResumenDto(
     val torneosActivos: Int = 0,
     val tasacionesPendientes: Int = 0
 )
+
+data class SolicitudCompraRequest(
+    val items: List<ItemCompraRequest> = emptyList()
+)
+
+data class ItemCompraRequest(
+    val productoId: Long,
+    val cantidad: Int
+)
+
+data class ResolverSolicitudCompraRequest(
+    val aceptar: Boolean
+)
+

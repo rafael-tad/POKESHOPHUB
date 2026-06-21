@@ -6,6 +6,11 @@ import com.pokeshophub.model.GastoIngreso
 import com.pokeshophub.repository.ProductoRepository
 import com.pokeshophub.repository.ClienteRepository
 import com.pokeshophub.repository.GastoIngresoRepository
+import com.pokeshophub.repository.SolicitudCompraRepository
+import com.pokeshophub.repository.NotificacionRepository
+import com.pokeshophub.model.SolicitudCompra
+import com.pokeshophub.model.SolicitudCompraItem
+import com.pokeshophub.model.Notificacion
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDateTime
@@ -22,7 +27,9 @@ import java.util.UUID
 class TiendaController(
     private val productoRepository: ProductoRepository,
     private val clienteRepository: ClienteRepository,
-    private val gastoIngresoRepository: GastoIngresoRepository
+    private val gastoIngresoRepository: GastoIngresoRepository,
+    private val solicitudCompraRepository: SolicitudCompraRepository,
+    private val notificacionRepository: NotificacionRepository
 ) {
 
     @Value("\${app.upload.dir}")
@@ -160,5 +167,140 @@ class TiendaController(
         response.contentType = MediaType.IMAGE_JPEG_VALUE
         Files.copy(path, response.outputStream)
         response.outputStream.flush()
+    }
+
+    // Cliente: Solicitar compra
+    @PostMapping("/solicitar-compra/{clienteId}")
+    fun solicitarCompra(
+        @PathVariable clienteId: Long,
+        @RequestBody request: SolicitudCompraRequest
+    ): ResponseEntity<MensajeResponse> {
+        val cliente = clienteRepository.findById(clienteId).orElse(null)
+            ?: return ResponseEntity.badRequest().body(MensajeResponse("Cliente no encontrado", false))
+
+        if (request.items.isEmpty()) {
+            return ResponseEntity.badRequest().body(MensajeResponse("El carrito está vacío", false))
+        }
+
+        val items = mutableListOf<SolicitudCompraItem>()
+        var total = 0.0
+
+        for (itemReq in request.items) {
+            val producto = productoRepository.findById(itemReq.productoId).orElse(null)
+                ?: return ResponseEntity.badRequest().body(MensajeResponse("Producto ID ${itemReq.productoId} no encontrado", false))
+
+            if (producto.stock < itemReq.cantidad) {
+                return ResponseEntity.badRequest().body(MensajeResponse("Stock insuficiente para ${producto.nombre}", false))
+            }
+
+            val item = SolicitudCompraItem(
+                productoId = producto.id,
+                productoNombre = producto.nombre,
+                cantidad = itemReq.cantidad,
+                precioUnitario = producto.precio
+            )
+            items.add(item)
+            total += producto.precio * itemReq.cantidad
+        }
+
+        val solicitud = SolicitudCompra(
+            clienteId = clienteId,
+            clienteNombre = "${cliente.nombre} ${cliente.apellidos}",
+            fecha = LocalDateTime.now(),
+            estado = "PENDIENTE",
+            total = total,
+            items = items
+        )
+
+        solicitudCompraRepository.save(solicitud)
+        return ResponseEntity.ok(MensajeResponse("Solicitud de compra enviada correctamente", true))
+    }
+
+    // ADMIN: Listar solicitudes de compra
+    @GetMapping("/admin/solicitudes-compra")
+    fun listarSolicitudesCompra(): List<SolicitudCompra> {
+        return solicitudCompraRepository.findAllByOrderByFechaDesc()
+    }
+
+    // ADMIN: Aceptar o rechazar solicitud de compra
+    @PostMapping("/admin/solicitudes-compra/{id}/resolver")
+    @org.springframework.transaction.annotation.Transactional
+    fun resolverSolicitudCompra(
+        @PathVariable id: Long,
+        @RequestBody request: ResolverSolicitudCompraRequest
+    ): ResponseEntity<MensajeResponse> {
+        val solicitud = solicitudCompraRepository.findById(id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+
+        if (solicitud.estado != "PENDIENTE") {
+            return ResponseEntity.badRequest().body(MensajeResponse("La solicitud ya ha sido procesada", false))
+        }
+
+        val cliente = clienteRepository.findById(solicitud.clienteId).orElse(null)
+            ?: return ResponseEntity.badRequest().body(MensajeResponse("Cliente no encontrado", false))
+
+        if (request.aceptar) {
+            // Validar saldo del cliente
+            if (cliente.saldo < solicitud.total) {
+                return ResponseEntity.badRequest().body(MensajeResponse("El cliente no tiene suficiente saldo para esta compra", false))
+            }
+
+            // Validar y descontar stock
+            for (item in solicitud.items) {
+                val producto = productoRepository.findById(item.productoId).orElse(null)
+                    ?: return ResponseEntity.badRequest().body(MensajeResponse("Producto ${item.productoNombre} no encontrado", false))
+                if (producto.stock < item.cantidad) {
+                    return ResponseEntity.badRequest().body(MensajeResponse("Stock insuficiente para ${producto.nombre}", false))
+                }
+                producto.stock -= item.cantidad
+                productoRepository.save(producto)
+            }
+
+            // Descontar saldo del cliente
+            cliente.saldo -= solicitud.total
+            clienteRepository.save(cliente)
+
+            // Registrar transacción de gasto
+            gastoIngresoRepository.save(
+                GastoIngreso(
+                    clienteId = solicitud.clienteId,
+                    tipo = com.pokeshophub.model.TipoMovimiento.GASTO,
+                    descripcion = "Compra aprobada: ${solicitud.items.joinToString(", ") { "${it.cantidad}x ${it.productoNombre}" }}",
+                    importe = solicitud.total,
+                    categoria = "TIENDA",
+                    fecha = java.time.LocalDate.now()
+                )
+            )
+
+            // Actualizar estado de la solicitud
+            solicitud.estado = "APROBADA"
+            solicitudCompraRepository.save(solicitud)
+
+            // Enviar notificación al cliente
+            notificacionRepository.save(
+                Notificacion(
+                    titulo = "Compra Aprobada",
+                    mensaje = "Tu compra se ha efectuado correctamente y tardará entre 5-7 días laborales en llegar.",
+                    destinatarioClienteId = solicitud.clienteId
+                )
+            )
+
+            return ResponseEntity.ok(MensajeResponse("Solicitud aprobada y procesada correctamente", true))
+        } else {
+            // Rechazar solicitud
+            solicitud.estado = "RECHAZADA"
+            solicitudCompraRepository.save(solicitud)
+
+            // Enviar notificación al cliente
+            notificacionRepository.save(
+                Notificacion(
+                    titulo = "Compra Rechazada",
+                    mensaje = "Lamentamos informarte que tu solicitud de compra ha sido rechazada.",
+                    destinatarioClienteId = solicitud.clienteId
+                )
+            )
+
+            return ResponseEntity.ok(MensajeResponse("Solicitud rechazada correctamente", true))
+        }
     }
 }

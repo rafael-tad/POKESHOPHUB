@@ -54,6 +54,7 @@ class TiendaOnlineScreen(val sesion: SesionUsuario, @field:Transient val onBack:
         var showSuccessPurchaseDialog by remember { mutableStateOf(false) }
         var procesandoCompraCart by remember { mutableStateOf(false) }
         var errorCompraCart by remember { mutableStateOf<String?>(null) }
+        var productoDetalle by remember { mutableStateOf<Producto?>(null) }
 
         // Función para recargar los datos
         fun cargarDatos() {
@@ -308,6 +309,158 @@ class TiendaOnlineScreen(val sesion: SesionUsuario, @field:Transient val onBack:
             )
         }
 
+        // Diálogo de detalles del producto
+        productoDetalle?.let { prod ->
+            val qty = carrito[prod.id] ?: 0
+            AlertDialog(
+                onDismissRequest = { productoDetalle = null },
+                modifier = Modifier.border(1.dp, NeoBorde, RoundedCornerShape(24.dp)),
+                title = {
+                    Text(
+                        text = prod.nombre,
+                        fontWeight = FontWeight.Bold,
+                        color = TextoPrimario,
+                        fontSize = 18.sp
+                    )
+                },
+                text = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        // Imagen ampliada en el diálogo
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(SuperficieVariante),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (prod.imagenUrl != null) {
+                                ProductoImagen(
+                                    productoId = prod.id,
+                                    modifier = Modifier.fillMaxSize().padding(8.dp)
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.CardMembership,
+                                    null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = AzulPrimario.copy(alpha = 0.3f)
+                                )
+                            }
+                        }
+
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    color = MoradoSecundario.copy(alpha = 0.1f),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        text = prod.categoria,
+                                        color = MoradoSecundario,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                                
+                                Surface(
+                                    color = if (prod.stock > 0) VerdeConfirmacion.copy(alpha = 0.1f) else RojoError.copy(alpha = 0.1f),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        text = if (prod.stock > 0) "Stock disponible: ${prod.stock}" else "Sin stock",
+                                        color = if (prod.stock > 0) VerdeConfirmacion else RojoError,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.height(4.dp))
+                            
+                            Text(
+                                text = "Descripción:",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = TextoSecundario
+                            )
+                            Text(
+                                text = prod.descripcion,
+                                color = TextoPrimario,
+                                fontSize = 14.sp,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            Spacer(Modifier.height(4.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Precio:",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = TextoSecundario
+                                )
+                                Text(
+                                    text = "${prod.precio.formatTwoDecimals()} €",
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MoradoSecundario,
+                                    fontSize = 22.sp
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                val current = carrito[prod.id] ?: 0
+                                if (current < prod.stock) {
+                                    carrito = carrito + (prod.id to (current + 1))
+                                }
+                            },
+                            enabled = prod.stock > 0 && qty < prod.stock,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AzulPrimario, contentColor = TextoSobrePrimario)
+                        ) {
+                            Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Añadir al Carrito", color = TextoSobrePrimario)
+                        }
+                        
+                        Button(
+                            onClick = { productoDetalle = null },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = SuperficieVariante, contentColor = TextoPrimario)
+                        ) {
+                            Text("Cerrar", color = TextoPrimario)
+                        }
+                    }
+                },
+                containerColor = Superficie,
+                shape = RoundedCornerShape(24.dp)
+            )
+        }
+
         Scaffold(
             topBar = {
                 Column {
@@ -413,6 +566,9 @@ class TiendaOnlineScreen(val sesion: SesionUsuario, @field:Transient val onBack:
                                          if (current < prod.stock) {
                                              carrito = carrito + (prod.id to (current + 1))
                                          }
+                                     },
+                                     onDetalleClick = {
+                                         productoDetalle = prod
                                      }
                                  )
                              }
@@ -427,7 +583,8 @@ class TiendaOnlineScreen(val sesion: SesionUsuario, @field:Transient val onBack:
     private fun ProductoCard(
         prod: Producto,
         cantidadEnCarrito: Int,
-        onAgregarAlCarrito: () -> Unit
+        onAgregarAlCarrito: () -> Unit,
+        onDetalleClick: () -> Unit
     ) {
         NeoBrutalistCard(
             modifier = Modifier
@@ -435,7 +592,8 @@ class TiendaOnlineScreen(val sesion: SesionUsuario, @field:Transient val onBack:
                 .height(260.dp),
             backgroundColor = SuperficieTarjeta,
             shape = RoundedCornerShape(16.dp),
-            shadowOffset = 6.dp
+            shadowOffset = 6.dp,
+            onClick = onDetalleClick
         ) {
             Column(modifier = Modifier.padding(12.dp).fillMaxSize()) {
                 // Imagen de producto

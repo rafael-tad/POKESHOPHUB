@@ -138,13 +138,21 @@ class ValoracionCartasScreen(val sesion: SesionUsuario) : Screen {
                         setBody(ValorarTasacionRequest(
                             valorEstimado = if (estado == "VALORADA") valor else 0.0,
                             notasAdmin = notasAdmin,
-                            estado = estado
+                            estado = estado,
+                            subCentrado = if (estado == "VALORADA") subCentrado.replace(",", ".").toDoubleOrNull() else null,
+                            subBordes = if (estado == "VALORADA") subBordes.replace(",", ".").toDoubleOrNull() else null,
+                            subEsquinas = if (estado == "VALORADA") subEsquinas.replace(",", ".").toDoubleOrNull() else null,
+                            subSuperficie = if (estado == "VALORADA") subSuperficie.replace(",", ".").toDoubleOrNull() else null
                         ))
                     }
                     if (response.status.value in 200..299) {
                         tasacionAValorar = null
                         valorStr = ""
                         notasAdmin = ""
+                        subCentrado = ""
+                        subBordes = ""
+                        subEsquinas = ""
+                        subSuperficie = ""
                         refreshTrigger++
                     } else {
                         val res = response.body<MensajeResponse>()

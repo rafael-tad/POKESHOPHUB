@@ -52,6 +52,7 @@ class SubidaTasacionScreen(val sesion: SesionUsuario, @field:Transient val onBac
         var subiendo by remember { mutableStateOf(false) }
 
         var showNuevaTasacionDialog by remember { mutableStateOf(false) }
+        var tasacionDetalle by remember { mutableStateOf<Tasacion?>(null) }
 
         val cameraLauncherFront = rememberCameraLauncher { bytes ->
             if (bytes != null) {
@@ -283,6 +284,160 @@ class SubidaTasacionScreen(val sesion: SesionUsuario, @field:Transient val onBac
             )
         }
 
+        // Diálogo de detalles de tasación
+        tasacionDetalle?.let { tas ->
+            val esValorada = tas.estado == "VALORADA"
+            val tieneSubnotas = tas.subCentrado != null && tas.subBordes != null && tas.subEsquinas != null && tas.subSuperficie != null
+            val media = if (tieneSubnotas) {
+                listOfNotNull(tas.subCentrado, tas.subBordes, tas.subEsquinas, tas.subSuperficie).average()
+            } else null
+
+            val psaLabel = when {
+                media == null -> "-"
+                media >= 9.5 -> "PSA 10 — GEM-MT"
+                media >= 9.0 -> "PSA 9 — MINT"
+                media >= 8.5 -> "PSA 8 — NM-MT"
+                media >= 8.0 -> "PSA 8 — NM-MT"
+                media >= 7.5 -> "PSA 7 — NM"
+                media >= 7.0 -> "PSA 7 — NM"
+                media >= 6.0 -> "PSA 6 — EX-MT"
+                media >= 5.0 -> "PSA 5 — EX"
+                media >= 4.0 -> "PSA 4 — VG-EX"
+                media >= 3.0 -> "PSA 3 — VG"
+                media >= 2.0 -> "PSA 2 — GOOD"
+                else -> "PSA 1 — POOR"
+            }
+
+            AlertDialog(
+                onDismissRequest = { tasacionDetalle = null },
+                title = { 
+                    Text(
+                        text = "Detalles de Tasación #${tas.id}",
+                        fontWeight = FontWeight.Bold,
+                        color = TextoPrimario
+                    ) 
+                },
+                text = {
+                    Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Descripción de la carta:",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = TextoSecundario
+                        )
+                        Text(
+                            text = tas.descripcion,
+                            color = TextoPrimario,
+                            fontSize = 15.sp
+                        )
+
+                        HorizontalDivider(color = NeoBorde.copy(alpha = 0.3f))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("Estado", fontSize = 12.sp, color = TextoSecundario)
+                                Text(
+                                    text = tas.estado,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (esValorada) VerdeConfirmacion else if (tas.estado == "RECHAZADA") RojoError else AmarilloAlerta
+                                )
+                            }
+                            if (esValorada) {
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text("Valor Estimado", fontSize = 12.sp, color = TextoSecundario)
+                                    Text(
+                                        text = "${tas.valorEstimado ?: 0.0} €",
+                                        fontWeight = FontWeight.Bold,
+                                        color = VerdeConfirmacion
+                                    )
+                                }
+                            }
+                        }
+
+                        if (esValorada && tieneSubnotas) {
+                            HorizontalDivider(color = NeoBorde.copy(alpha = 0.3f))
+                            Text(
+                                text = "Subnotas (estilo PSA):",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = TextoSecundario
+                            )
+                            
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = FondoApp),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, NeoBorde.copy(alpha = 0.3f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("Centrado", fontSize = 13.sp, color = TextoPrimario)
+                                        Text("${tas.subCentrado} / 10", fontWeight = FontWeight.Bold, color = TextoPrimario)
+                                    }
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("Bordes", fontSize = 13.sp, color = TextoPrimario)
+                                        Text("${tas.subBordes} / 10", fontWeight = FontWeight.Bold, color = TextoPrimario)
+                                    }
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("Esquinas", fontSize = 13.sp, color = TextoPrimario)
+                                        Text("${tas.subEsquinas} / 10", fontWeight = FontWeight.Bold, color = TextoPrimario)
+                                    }
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("Superficie", fontSize = 13.sp, color = TextoPrimario)
+                                        Text("${tas.subSuperficie} / 10", fontWeight = FontWeight.Bold, color = TextoPrimario)
+                                    }
+                                    HorizontalDivider(color = NeoBorde.copy(alpha = 0.2f))
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Nota Media", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextoPrimario)
+                                        Text("${String.format("%.2f", media ?: 0.0)} / 10", fontWeight = FontWeight.ExtraBold, color = AzulPrimario)
+                                    }
+                                    Text(
+                                        text = psaLabel,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = VerdeConfirmacion,
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                    )
+                                }
+                            }
+                        }
+
+                        if (tas.notasAdmin?.isNotBlank() == true) {
+                            HorizontalDivider(color = NeoBorde.copy(alpha = 0.3f))
+                            Text(
+                                text = "Notas del tasador:",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = TextoSecundario
+                            )
+                            Text(
+                                text = tas.notasAdmin ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextoPrimario
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { tasacionDetalle = null },
+                        colors = ButtonDefaults.buttonColors(containerColor = AzulPrimario, contentColor = TextoSobrePrimario),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Cerrar", color = TextoSobrePrimario)
+                    }
+                },
+                containerColor = Superficie,
+                shape = RoundedCornerShape(24.dp)
+            )
+        }
+
         Scaffold(
             topBar = {
                 Column {
@@ -369,11 +524,17 @@ class SubidaTasacionScreen(val sesion: SesionUsuario, @field:Transient val onBac
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(tasaciones) { tas ->
-                                TasacionRow(tas) {
-                                    // Ver foto en el visor
-                                    val downloadUrl = "/api/tasaciones/foto/${tas.id}"
-                                    navigator.push(VisorDocumentoScreen(tas.id, "Foto de Carta #${tas.id}", downloadUrl))
-                                }
+                                TasacionRow(
+                                    tas = tas,
+                                    onVerFotoClick = {
+                                        // Ver foto en el visor
+                                        val downloadUrl = "/api/tasaciones/foto/${tas.id}"
+                                        navigator.push(VisorDocumentoScreen(tas.id, "Foto de Carta #${tas.id}", downloadUrl))
+                                    },
+                                    onDetalleClick = {
+                                        tasacionDetalle = tas
+                                    }
+                                )
                             }
                         }
                     }
@@ -383,14 +544,19 @@ class SubidaTasacionScreen(val sesion: SesionUsuario, @field:Transient val onBac
     }
 
     @Composable
-    private fun TasacionRow(tas: Tasacion, onVerFotoClick: () -> Unit) {
+    private fun TasacionRow(
+        tas: Tasacion,
+        onVerFotoClick: () -> Unit,
+        onDetalleClick: () -> Unit
+    ) {
         val esValorada = tas.estado == "VALORADA"
         
         NeoBrutalistCard(
             modifier = Modifier.fillMaxWidth().padding(end = 6.dp),
             backgroundColor = Superficie,
             shape = RoundedCornerShape(20.dp),
-            shadowOffset = 6.dp
+            shadowOffset = 6.dp,
+            onClick = onDetalleClick
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(

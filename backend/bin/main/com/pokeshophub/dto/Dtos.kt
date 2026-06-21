@@ -110,7 +110,11 @@ data class EnviarTasacionRequest(
 data class ValorarTasacionRequest(
     val valorEstimado: Double = 0.0,
     val notasAdmin: String = "",
-    @field:NotBlank val estado: String = "VALORADA"
+    @field:NotBlank val estado: String = "VALORADA",
+    val subCentrado: Double? = null,
+    val subBordes: Double? = null,
+    val subEsquinas: Double? = null,
+    val subSuperficie: Double? = null
 )
 
 // ── Wallet / Monedero ────────────────────────────────────────────

@@ -5,9 +5,11 @@ import com.pokeshophub.model.Tasacion
 import com.pokeshophub.model.Cliente
 import com.pokeshophub.model.GastoIngreso
 import com.pokeshophub.model.TipoMovimiento
+import com.pokeshophub.model.Notificacion
 import com.pokeshophub.repository.TasacionRepository
 import com.pokeshophub.repository.ClienteRepository
 import com.pokeshophub.repository.GastoIngresoRepository
+import com.pokeshophub.repository.NotificacionRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -26,7 +28,8 @@ import java.util.UUID
 class TasacionController(
     private val tasacionRepository: TasacionRepository,
     private val clienteRepository: ClienteRepository,
-    private val gastoIngresoRepository: GastoIngresoRepository
+    private val gastoIngresoRepository: GastoIngresoRepository,
+    private val notificacionRepository: NotificacionRepository
 ) {
     @Value("\${app.upload.dir}")
     private lateinit var uploadDir: String
@@ -73,6 +76,7 @@ class TasacionController(
 
     // ADMIN: Valorar o Rechazar tasación
     @PostMapping("/admin/{id}/valorar")
+    @org.springframework.transaction.annotation.Transactional
     fun valorarTasacion(
         @PathVariable id: Long,
         @RequestBody request: ValorarTasacionRequest
@@ -89,6 +93,10 @@ class TasacionController(
 
         tasacion.estado = request.estado
         tasacion.notasAdmin = request.notasAdmin
+        tasacion.subCentrado = request.subCentrado
+        tasacion.subBordes = request.subBordes
+        tasacion.subEsquinas = request.subEsquinas
+        tasacion.subSuperficie = request.subSuperficie
 
         if (request.estado == "VALORADA") {
             tasacion.valorEstimado = request.valorEstimado
@@ -105,6 +113,24 @@ class TasacionController(
                     importe = request.valorEstimado,
                     categoria = "TASACION",
                     fecha = LocalDate.now()
+                )
+            )
+
+            // Notificación al cliente
+            notificacionRepository.save(
+                Notificacion(
+                    titulo = "Carta Valorada",
+                    mensaje = "Tu solicitud de tasación para la carta '${tasacion.descripcion}' ha sido aprobada con un valor estimado de ${request.valorEstimado} €. El importe ha sido abonado en tu monedero virtual.",
+                    destinatarioClienteId = tasacion.clienteId
+                )
+            )
+        } else if (request.estado == "RECHAZADA") {
+            // Notificación al cliente por rechazo
+            notificacionRepository.save(
+                Notificacion(
+                    titulo = "Tasación Rechazada",
+                    mensaje = "Tu solicitud de tasación para la carta '${tasacion.descripcion}' ha sido rechazada. Motivo/Notas: ${request.notasAdmin}",
+                    destinatarioClienteId = tasacion.clienteId
                 )
             )
         }

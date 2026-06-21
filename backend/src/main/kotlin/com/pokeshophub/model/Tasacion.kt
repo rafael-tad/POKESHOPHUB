@@ -27,5 +27,10 @@ data class Tasacion(
     var notasAdmin: String? = null,
 
     @Column(nullable = false)
-    val fechaSubida: LocalDateTime = LocalDateTime.now()
+    val fechaSubida: LocalDateTime = LocalDateTime.now(),
+
+    var subCentrado: Double? = null,
+    var subBordes: Double? = null,
+    var subEsquinas: Double? = null,
+    var subSuperficie: Double? = null
 )

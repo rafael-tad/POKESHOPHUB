@@ -199,7 +199,11 @@ data class Tasacion(
     val valorEstimado: Double? = null,
     val notasAdmin: String? = null,
     val estado: String = "PENDIENTE",
-    val fecha: String = ""
+    val fecha: String = "",
+    val subCentrado: Double? = null,
+    val subBordes: Double? = null,
+    val subEsquinas: Double? = null,
+    val subSuperficie: Double? = null
 )
 
 @Serializable
@@ -212,7 +216,11 @@ data class EnviarTasacionRequest(
 data class ValorarTasacionRequest(
     val valorEstimado: Double,
     val notasAdmin: String,
-    val estado: String = "VALORADA"
+    val estado: String = "VALORADA",
+    val subCentrado: Double? = null,
+    val subBordes: Double? = null,
+    val subEsquinas: Double? = null,
+    val subSuperficie: Double? = null
 )
 
 // ── Wallet / Monedero ────────────────────────────────────────────
